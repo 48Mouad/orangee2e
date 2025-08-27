@@ -1,5 +1,5 @@
 // cypress/e2e/orange_shop.cy.js
-// أعلى orange_shop.cy.js
+
 
 
 // --- Slow-Mo optionnel (par défaut désactivé)
@@ -756,12 +756,48 @@ it('TC08 - Commander → page suivante (checkout/identification)', {
 });
 
 });
+const fillEmail = (value) => {
+  cy.get('body', { timeout: 15000 }).then(($b) => {
+    // 1) أحسن احتمال: input[type=email]
+    let inp = $b.find('input[type="email"]').first();
 
-// =====================[  TC09 مُحدَّث نهائي ]=====================
+    // 2) fallback: قلب بالـ attributes/labels (FR/EN/AR)
+    if (!inp.length) {
+      inp = $b.find('input, textarea, [role="textbox"]').filter((i, el) => {
+        const blob = [
+          el.type,
+          el.name || '',
+          el.id || '',
+          el.getAttribute('placeholder') || '',
+          el.getAttribute('aria-label') || '',
+          (el.closest('label')?.textContent || ''),
+          (el.parentElement?.textContent || '')
+        ].join(' ').toLowerCase();
+        return /(e-?mail|email|mail|البريد|إيميل)/.test(blob);
+      }).first();
+    }
+
+    // 3) fallback عبر <label for="...">
+    if (!inp.length) {
+      const $lab = $b.find('label').filter((i, el) =>
+        /(e-?mail|email|mail|البريد|إيميل)/i.test(el.textContent || '')
+      ).first();
+      if ($lab.length) {
+        const forId = $lab.attr('for');
+        if (forId) inp = $b.find(`#${forId}`).first();
+      }
+    }
+
+    if (inp.length) cy.wrap(inp).clear({ force: true }).type(value, { force: true });
+    else throw new Error('Champ email introuvable');
+  });
+};
+
 it('TC09 - Remplit le formulaire et passe à Livraison', {
   defaultCommandTimeout: 20000,
   retries: { runMode: 1, openMode: 0 }
 }, () => {
+  // نوجّهو للـ identification إلا ماكناش فيها
   cy.location().then((loc) => {
     const where = (loc.pathname || '') + (loc.search || '');
     if (!/identification|step=identification|checkout|connexion|adresse/i.test(where)) {
@@ -770,17 +806,38 @@ it('TC09 - Remplit le formulaire et passe à Livraison', {
     }
   });
 
+  // حاول نمشيو كـ ضيف ونحلّ الأقسام إذا كاينة
+  cy.get('body', { timeout: 15000 }).then(($b) => {
+    const guestBtn = $b.find('a,button,[role="button"]').filter((i, el) =>
+      /continuer en tant qu.?invité|invité|guest|continue as guest|ضيف|كضيف/i.test((el.textContent || '').toLowerCase())
+    ).first();
+    if (guestBtn.length) cy.wrap(guestBtn).scrollIntoView().click({ force: true });
+  });
+
+  cy.get('body', { timeout: 15000 }).then(($b) => {
+    const toggles = $b.find('h2,h3,button,[role="button"],.accordion,.section').filter((i, el) =>
+      /informations?\s+de\s+contact|contact info|contact information|معلومات\s*الاتصال/i.test((el.textContent || '').toLowerCase())
+    );
+    toggles.each((i, el) => {
+      const expanded = (el.getAttribute('aria-expanded') || '').toLowerCase();
+      if (expanded === 'false' || expanded === '') cy.wrap(el).click({ force: true });
+    });
+  });
+
+  // انتظر النص ديال الستيب (بدون extraSelector)
   cy.waitForPageReady({
-  fallbackTextRegex: [
-    /identification|informations?\s+de\s+contact|connexion|adresse/i,
-    /contact|address|login|sign\s*in|identification/i,
-    /هوية|تعريف|معلومات\s*الاتصال|اتصال|عنوان|العنوان/i
-  ],
-  timeout: 30000
-});
+    fallbackTextRegex: [
+      /identification|informations?\s+de\s+contact|connexion|adresse/i,
+      /contact|address|login|sign\s*in|identification/i,
+      /هوية|تعريف|معلومات\s*الاتصال|اتصال|عنوان|العنوان/i
+    ],
+    timeout: 30000
+  });
 
+  // ✉️ الإيميل (باستعمال الـ helper الجديد)
+  fillEmail('test@example.com');
 
-  typeIntoField(/mail|e-?mail/i, 'test@example.com');
+  // باقي الحقول (كيف كانوا عندك)
   clickRadioByLabel(/monsieur|madame/);
   typeIntoField(/pr[eé]nom|first/i, 'Test');
   typeIntoField(/nom|last/i, 'User');
@@ -799,17 +856,20 @@ it('TC09 - Remplit le formulaire et passe à Livraison', {
     }
   });
 
-  // زر المتابعة
+  // تابع
   findCommanderButton().then(($btn) => {
     if ($btn) cy.wrap($btn).scrollIntoView().click({ force: true });
-    else cy.contains('button,a,[role="button"]', /continuer|suivant|valider/i, { timeout: 15000 })
+    else cy.contains('button,a,[role="button"]', /continuer|suivant|valider|next|continue|تابع|أكمل/i, { timeout: 15000 })
            .first().scrollIntoView().click({ force: true });
   });
 
-  // ⛔️ حيدنا intercept/wait (@gotoDelivery)
+  // انتظار ستِب livraison (بدون extraSelector)
   cy.waitForPageReady({
-    fallbackTextRegex: /livraison|adresse\s+de\s+livraison|delivery/i,
-    extraSelector: 'input[name*="address" i], input[name*="adresse" i], [data-cy="address-line1"]',
+    fallbackTextRegex: [
+      /livraison|adresse\s+de\s+livraison/i,
+      /delivery|shipping\s*address/i,
+      /التوصيل|عنوان\s*التسليم|الشحن/i
+    ],
     timeout: 30000
   });
 
