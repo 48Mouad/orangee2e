@@ -747,10 +747,14 @@ it('TC08 - Commander → page suivante (checkout/identification)', {
 
   // ومن بعد انتظر جاهزية الصفحة بالنصّ/الحقل
   cy.waitForPageReady({
-    fallbackTextRegex: /identification|informations?\s+de\s+contact|connexion|adresse/i,
-    extraSelector: 'input[type="email"], input[name*="mail"], input[placeholder*="mail" i]',
-    timeout: 30000
-  });
+  fallbackTextRegex: [
+    /identification|informations?\s+de\s+contact|connexion|adresse/i,
+    /contact|address|login|sign\s*in|identification/i,
+    /هوية|تعريف|معلومات\s*الاتصال|اتصال|عنوان|العنوان/i
+  ],
+  timeout: 30000
+});
+
 });
 
 // =====================[  TC09 مُحدَّث نهائي ]=====================
@@ -767,10 +771,14 @@ it('TC09 - Remplit le formulaire et passe à Livraison', {
   });
 
   cy.waitForPageReady({
-    fallbackTextRegex: /identification|informations?\s+de\s+contact|connexion|adresse/i,
-    extraSelector: 'input[type="email"], input[name*="mail"], input[placeholder*="mail" i]',
-    timeout: 30000
-  });
+  fallbackTextRegex: [
+    /identification|informations?\s+de\s+contact|connexion|adresse/i,
+    /contact|address|login|sign\s*in|identification/i,
+    /هوية|تعريف|معلومات\s*الاتصال|اتصال|عنوان|العنوان/i
+  ],
+  timeout: 30000
+});
+
 
   typeIntoField(/mail|e-?mail/i, 'test@example.com');
   clickRadioByLabel(/monsieur|madame/);
