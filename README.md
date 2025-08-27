@@ -1,8 +1,14 @@
 # Orange Maroc – E2E (Cypress)
+[![E2E (Cypress)](https://github.com/48Mouad/orangee2e/actions/workflows/cypress.yml/badge.svg)](https://github.com/48Mouad/orangee2e/actions/workflows/cypress.yml)
 
 Tests end-to-end du parcours d’achat carte **SIM/eSIM** sur la boutique Orange Maroc.
 
+
 ## 🚀 Démarrage rapide (VS Code)
+### Prérequis
+- **Node.js 18+** (`node -v`)
+- **npm** (`npm -v`)
+- **Google Chrome** (pour le mode headed)
 
 1. **Installer Node.js 18+** (vérifier `node -v`).
 2. Ouvrir ce dossier dans **VS Code**.
@@ -11,64 +17,98 @@ Tests end-to-end du parcours d’achat carte **SIM/eSIM** sur la boutique Orange
    npm install
    ```
 4. Lancer l’interface Cypress :
-   ```bash
-   npm run cy:open
-   ```
-   ou en **CI / headless** :
-   ```bash
-   npm test
-   ```
+Lancer les tests 
+
+UI (dev) :
+
+npm run cy:open
+
+
+Headless / CI :
+
+npm test
+# ou
+npm run cy:run
+
+
+L’option SLOW (ms) est supportée : --env SLOW=0 (par défaut 0).
 
 > ℹ️ Le `baseUrl` est configuré dans `cypress.config.js` : `https://boutique.orange.ma`.
 
 ## 📁 Structure
-```
 cypress/
   e2e/
-    orange_shop.cy.js      # Specs E2E (vos TC01..TC18)
-  fixtures/                # Fichiers de test (générés à la volée)
+    orange_shop.cy.js       # Specs E2E (TC01…)
+  fixtures/                 # Fichiers générés à la volée
   support/
-    commands.js            # cypress-file-upload + helpers
-    e2e.js
+    commands.js             # Helpers + cypress-file-upload
+    e2e.js                  # Import des commandes
 cypress.config.js
 package.json
-```
 
-## 🧪 Couverture des cas
-- TC01 Accès page offres
-- TC02 Sélection offre
-- TC03 Sélection SIM/eSIM
-- TC04-A Ajout panier 20DH
-- TC04-B Ajout panier Marhaba
-- TC05 Accès panier
-- TC09 Compatibilité eSIM (smoke)
-- TC10 Suppression panier
-- TC11 Code promo invalide
-- TC12 Upload > 5 Mo
-- TC17/TC18 Paiement (placeholders à brancher sur **sandbox CMI**)
-Dimareal1946
 
-## 📦 Upload > 5 Mo
-Le test **TC12** crée dynamiquement un fichier PDF de 6 Mo (aucun gros fichier conservé dans le repo).
+🧪 Couverture (extraits)
 
-## 🔒 Sécurité (optionnel)
-- Ajoutez un job **OWASP ZAP Baseline** en CI pour crawler la page et détecter les risques connus.
-- Évitez de stocker des données perso dans les logs/screenshots.
+TC01 Accès à la page des offres
 
-## 📈 Performance (optionnel)
-- Script `npm run lighthouse` pour récupérer les indicateurs clés (FCP/LCP/TBT/CLS) sur desktop.
-  > Nécessite **Chrome** installé localement.
+TC02 Ouverture des détails d’offres
 
-## ⚠️ Avertissements
-- Ces tests agissent **sur un site de production**. Privilégiez un **environnement de staging** quand c’est possible.
-- Les flux **paiement** (TC17/TC18) doivent être réalisés **uniquement** en **sandbox** avec cartes de test CMI.
+TC03 Sélection SIM / eSIM
 
-## 🤝 Licence
-Usage interne pour validation QA.
+TC04-A Ajouter → Voir mon panier
 
-# orangee2e
+TC04-B Ajouter → Continuer mes achats
 
-E2E tests for https://boutique.orange.ma using Cypress.
+TC05 Accès direct au panier
+
+TC06 Code promo invalide
+
+TC07 Estimation livraison (ex: Oujda)
+
+TC08 Commander → étape Identification
+
+TC09 Identification → passer à Livraison
+(À étendre : suppression panier, compatibilité eSIM, paiement sandbox CMI, etc.)
+
+🧰 Scripts npm
+Script	Description
+npm run cy:open	Ouvre Cypress en mode interactif
+npm run cy:run	Exécute les tests en headless (Chrome)
+npm test	Alias de cy:run (utilisé en CI)
+npm run lighthouse	Mesures de perf (optionnel, Chrome requis)
+
+🤖 CI (GitHub Actions)
+
+Le workflow .github/workflows/cypress.yml :
+
+installe Node 18 + Chrome
+
+exécute la même commande que localement (Chrome headless)
+
+uploade screenshots/videos en cas d’échec
+
+supporte le run manuel via Actions → Run workflow
+
+🛠️ Dépannage rapide
+
+Headless vs headed : le site peut changer de langue ; le pipeline force FR.
+
+Sélecteurs CSS4 [attr*="x" i] : non supportés par Sizzle → éviter i, préférez un filtrage JS via .filter().
+
+Flakiness : animations désactivées dans commands.js, utilisez waitForPageReady() au lieu de cy.wait() aveugle.
+
+Prod : ces tests ciblent la prod — privilégier un staging si possible pour les cas sensibles (paiement).
+
+🔒 Sécurité (optionnel)
+
+Ajouter un job OWASP ZAP Baseline (scan passif).
+
+Éviter toute donnée personnelle dans les logs/artefacts.
+
+Licence
+
+Usage interne (QA).
+© DIOT SIACI Maroc / Équipe QA E2E.
 
 ## Run locally
 ```bash
