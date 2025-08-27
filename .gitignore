@@ -1,0 +1,16 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn.lock
+.pnp.*
+.cache/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/reports/
+
+# Env / misc
+.env*
+.DS_Store

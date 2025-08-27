@@ -1,0 +1,68 @@
+name: E2E (Cypress)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: 🧭 Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: 📦 Install deps
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm i
+          fi
+
+      - name: 🧪 Run Cypress (Chrome headless)
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome
+          # نفس الكوماند ديالك بالضبط:
+          command: >
+            npx cypress run
+            --browser chrome --headless
+            --spec cypress/e2e/orange_shop.cy.js
+            --env SLOW=0
+            --config video=false,screenshotOnRunFailure=false,trashAssetsBeforeRuns=true
+            -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768
+
+      - name: 📎 Upload screenshots (if any)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+
+      - name: 🎥 Upload videos (if any)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+
+

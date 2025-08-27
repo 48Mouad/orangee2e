@@ -1,0 +1,20 @@
+{
+  "name": "orange-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cypress E2E tests for Orange Maroc prepaid SIM/eSIM purchase flow",
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run --browser chrome --headless --spec cypress/e2e/orange_shop.cy.js --env SLOW=0 --config video=false,screenshotOnRunFailure=false,trashAssetsBeforeRuns=true -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768",
+    "test": "npm run cy:run",
+    "test:headed": "cypress run --headed --browser chrome",
+    "lighthouse": "node scripts/lighthouse.js",
+    "zap:baseline": "echo \"(Optional) Run OWASP ZAP baseline in CI.\""
+  },
+  "devDependencies": {
+    "cypress": "^13.10.0",
+    "cypress-file-upload": "^5.0.8",
+    "lighthouse": "^12.0.0"
+  }
+}

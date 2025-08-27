@@ -1,0 +1,7 @@
+const fs = require('fs')
+const path = require('path')
+const ensure = p => !fs.existsSync(p) && fs.mkdirSync(p, { recursive: true })
+ensure(path.join(__dirname, '..', 'cypress', 'e2e'))
+ensure(path.join(__dirname, '..', 'cypress', 'fixtures'))
+ensure(path.join(__dirname, '..', 'cypress', 'support'))
+console.log('Postinstall complete.')
