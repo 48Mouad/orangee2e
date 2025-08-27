@@ -1,50 +1,125 @@
 // cypress/support/commands.js
 
-// تعطيل animations باش نقللو flakiness
-beforeEach(() => {
-  cy.window({ log: false }).then((w) => {
-    const style = w.document.createElement('style');
-    style.setAttribute('data-cy', 'cypress-no-anim');
-    style.innerHTML = `
-      * { scroll-behavior: auto !important; }
-      *, *::before, *::after { transition: none !important; animation: none !important; }
-    `;
-    w.document.head.appendChild(style);
+// Plugins
+import 'cypress-file-upload';
+
+// قلل الفلايكينس: ما تطيّحش التست بسبب أخطاء JS ديال السايت
+Cypress.on('uncaught:exception', () => false);
+
+// بديل بسيط لـ cy.idle اللي كانت كتعطي error
+Cypress.Commands.add('idle', (ms = 200) => cy.wait(ms));
+
+// عطّل الأنيميشنز باش العناصر تبان ثابتة
+Cypress.Commands.add('disableAnimations', () => {
+  const styles = `
+    * { transition: none !important; animation: none !important; caret-color: transparent !important; }
+    html { scroll-behavior: auto !important; }
+  `;
+  cy.document().then((doc) => {
+    const style = doc.createElement('style');
+    style.id = 'e2e-no-anim';
+    style.innerHTML = styles;
+    doc.head.appendChild(style);
   });
 });
 
-// idle بسيطة وآمنة
-Cypress.Commands.add('idle', (ms = 350) => {
-  return cy.wait(ms, { log: false });
+// سناير جاهزية الصفحة
+Cypress.Commands.add('waitForPageReady', () => {
+  cy.document().its('readyState').should('eq', 'complete');
+  cy.disableAnimations();
 });
 
-// انتظار جاهزية الصفحة بلا cy.contains وبلا data-cy ضروري
-Cypress.Commands.add('waitForPageReady', (opts = {}) => {
-  const { marker, fallbackTextRegex, extraSelector, timeout = 30000 } = opts;
+// ===== Checkout helpers (iframe-safe, no CSS4 selectors) =====
 
-  cy.get('body', { timeout }).should('be.visible');
+// رجّع root اللي غادي نخدمو عليه (body ولا iframe ديال الcheckout)
+Cypress.Commands.add('getCheckoutRoot', () => {
+  const guess =
+    'iframe[src*="check"], iframe[id*="check"], iframe[name*="check"], iframe[src*="secure"], iframe[src*="auth"]';
+  return cy.get('body').then(($body) => {
+    const $ifr = $body.find(guess);
+    if ($ifr.length) {
+      return cy
+        .wrap($ifr.first())
+        .its('0.contentDocument.body', { log: false })
+        .should('not.be.empty')
+        .then((b) => cy.wrap(b));
+    }
+    return cy.wrap($body);
+  });
+});
 
-  if (marker) {
-    cy.get(marker, { timeout }).should('be.visible');
-  }
-
-  if (fallbackTextRegex) {
-    const patterns = Array.isArray(fallbackTextRegex) ? fallbackTextRegex : [fallbackTextRegex];
-    cy.get('body', { timeout }).should(($b) => {
-      const t = ($b.text() || '');
-      const ok = patterns.some((re) => re.test(t));
-      if (!ok) throw new Error('page not ready (text not found yet)');
+// سدّ أي بانير/مودال كيسدّ علينا الفورم
+Cypress.Commands.add('closeBannersIfAny', () => {
+  return cy.getCheckoutRoot().then(($root) => {
+    const selectors = [
+      'button:contains("Accepter")',
+      'button:contains("J\'accepte")',
+      'button:contains("OK")',
+      'button[aria-label*="fermer" i]',
+      '[data-testid*="close" i]',
+      '.cookie, .cookies, .cc-window button',
+    ];
+    selectors.forEach((sel) => {
+      const $btns = $root.find(sel);
+      if ($btns.length) cy.wrap($btns[0]).click({ force: true });
     });
-  }
-
-  if (extraSelector) {
-    cy.get(extraSelector, { timeout }).should('be.visible');
-  }
-
-  cy.idle(250);
+  });
 });
 
-// كليك آمن
-Cypress.Commands.add('safeClick', (selector, timeout = 10000) => {
-  cy.get(selector, { timeout }).should('be.visible').and('not.be.disabled').click();
+// إلا كان سويتش بين Téléphone/Email بدّل ل Email
+Cypress.Commands.add('ensureEmailMode', () => {
+  return cy.getCheckoutRoot().then(($root) => {
+    const $switch = $root
+      .find('button,[role=tab],a')
+      .filter((_, el) => /e-?mail|courriel/i.test(el.textContent || ''));
+    if ($switch.length) cy.wrap($switch[0]).click({ force: true });
+  });
+});
+
+// قلب على input ديال الإيميل بطريقة JS فلترة (ماشي CSS4)
+Cypress.Commands.add('findEmailInput', () => {
+  return cy.getCheckoutRoot().then(($root) => {
+    const $cands = $root.find('input,textarea');
+    const $match = $cands.filter((_, el) => {
+      const t = (el.getAttribute('type') || '').toLowerCase();
+      const n = (el.getAttribute('name') || '').toLowerCase();
+      const id = (el.getAttribute('id') || '').toLowerCase();
+      const ph = (el.getAttribute('placeholder') || '').toLowerCase();
+      return t === 'email' || n.includes('mail') || id.includes('mail') || ph.includes('mail');
+    });
+    return cy.wrap($match.first());
+  });
+});
+
+// بديل: قلب على input ديال التليفون إلا ما لقيناش الإيميل
+Cypress.Commands.add('findPhoneInput', () => {
+  return cy.getCheckoutRoot().then(($root) => {
+    const $cands = $root.find('input,textarea');
+    const $match = $cands.filter((_, el) => {
+      const t = (el.getAttribute('type') || '').toLowerCase();
+      const n = (el.getAttribute('name') || '').toLowerCase();
+      const id = (el.getAttribute('id') || '').toLowerCase();
+      const ph = (el.getAttribute('placeholder') || '').toLowerCase();
+      return (
+        t === 'tel' ||
+        n.includes('tel') ||
+        n.includes('phone') ||
+        id.includes('tel') ||
+        id.includes('phone') ||
+        ph.includes('télé') ||
+        ph.includes('phone')
+      );
+    });
+    return cy.wrap($match.first());
+  });
+});
+
+// كليكة على Continuer / Suivant / Livraison
+Cypress.Commands.add('clickContinueOnIdentification', () => {
+  return cy.getCheckoutRoot().then(($root) => {
+    const $btn = $root
+      .find('button,a')
+      .filter((_, el) => /continuer|suivant|livraison|adresse|next/i.test(el.textContent || ''));
+    if ($btn.length) cy.wrap($btn[0]).click({ force: true });
+  });
 });

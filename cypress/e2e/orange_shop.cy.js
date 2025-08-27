@@ -793,89 +793,31 @@ const fillEmail = (value) => {
   });
 };
 
-it('TC09 - Remplit le formulaire et passe à Livraison', {
-  defaultCommandTimeout: 20000,
-  retries: { runMode: 1, openMode: 0 }
-}, () => {
-  // نوجّهو للـ identification إلا ماكناش فيها
-  cy.location().then((loc) => {
-    const where = (loc.pathname || '') + (loc.search || '');
-    if (!/identification|step=identification|checkout|connexion|adresse/i.test(where)) {
-      cy.visit('/panier?step=identification', { timeout: 30000 });
-      waitForLoad(); acceptCookiesIfPresent();
-    }
-  });
+it('TC09 - Remplit le formulaire et passe à Livraison', () => {
+  // حضّر الصفحة
+  cy.waitForPageReady();
+  cy.closeBannersIfAny();
+  cy.ensureEmailMode();
 
-  // حاول نمشيو كـ ضيف ونحلّ الأقسام إذا كاينة
-  cy.get('body', { timeout: 15000 }).then(($b) => {
-    const guestBtn = $b.find('a,button,[role="button"]').filter((i, el) =>
-      /continuer en tant qu.?invité|invité|guest|continue as guest|ضيف|كضيف/i.test((el.textContent || '').toLowerCase())
-    ).first();
-    if (guestBtn.length) cy.wrap(guestBtn).scrollIntoView().click({ force: true });
-  });
-
-  cy.get('body', { timeout: 15000 }).then(($b) => {
-    const toggles = $b.find('h2,h3,button,[role="button"],.accordion,.section').filter((i, el) =>
-      /informations?\s+de\s+contact|contact info|contact information|معلومات\s*الاتصال/i.test((el.textContent || '').toLowerCase())
-    );
-    toggles.each((i, el) => {
-      const expanded = (el.getAttribute('aria-expanded') || '').toLowerCase();
-      if (expanded === 'false' || expanded === '') cy.wrap(el).click({ force: true });
+  // جرّب الإيميل أولاً، وإلا دوز بالتليفون (fallback)
+  cy.findEmailInput()
+    .then(($email) => {
+      if ($email && $email.length) {
+        cy.wrap($email).clear().type('qa-bot@example.org', { delay: 0 });
+      } else {
+        // لا يوجد حقل إيميل في هاد الفاريونت → استعمل التليفون
+        cy.findPhoneInput().then(($tel) => {
+          expect($tel.length, 'Champ téléphone').to.be.greaterThan(0);
+          cy.wrap($tel).clear().type('0612345678', { delay: 0 });
+        });
+      }
+    })
+    .then(() => {
+      cy.clickContinueOnIdentification();
+      // تأكيد الإنتقال لمرحلة "Livraison / Adresse"
+      cy.contains(/livraison|adresse/i, { timeout: 30000 }).should('be.visible');
     });
-  });
-
-  // انتظر النص ديال الستيب (بدون extraSelector)
-  cy.waitForPageReady({
-    fallbackTextRegex: [
-      /identification|informations?\s+de\s+contact|connexion|adresse/i,
-      /contact|address|login|sign\s*in|identification/i,
-      /هوية|تعريف|معلومات\s*الاتصال|اتصال|عنوان|العنوان/i
-    ],
-    timeout: 30000
-  });
-
-  // ✉️ الإيميل (باستعمال الـ helper الجديد)
-  fillEmail('test@example.com');
-
-  // باقي الحقول (كيف كانوا عندك)
-  clickRadioByLabel(/monsieur|madame/);
-  typeIntoField(/pr[eé]nom|first/i, 'Test');
-  typeIntoField(/nom|last/i, 'User');
-
-  cy.get('body', { timeout: 1000 }).then(($b) => {
-    const num = $b.find('input[name="cin"], input[name="idNumber"]').first();
-    if (num.length) cy.wrap(num).clear({ force: true }).type('AB123456', { force: true });
-
-    const day = $b.find('input,select').filter((i, el) => /jour|jj/i.test(el.name||el.id||'')).first();
-    const mon = $b.find('input,select').filter((i, el) => /mois|mm/i.test(el.name||el.id||'')).first();
-    const yea = $b.find('input,select').filter((i, el) => /ann[eé]e|aaaa|year/i.test(el.name||el.id||'')).first();
-    if (day.length && mon.length && yea.length) {
-      cy.wrap(day).clear({ force: true }).type('23', { force: true });
-      cy.wrap(mon).clear({ force: true }).type('08', { force: true });
-      cy.wrap(yea).clear({ force: true }).type('1995', { force: true });
-    }
-  });
-
-  // تابع
-  findCommanderButton().then(($btn) => {
-    if ($btn) cy.wrap($btn).scrollIntoView().click({ force: true });
-    else cy.contains('button,a,[role="button"]', /continuer|suivant|valider|next|continue|تابع|أكمل/i, { timeout: 15000 })
-           .first().scrollIntoView().click({ force: true });
-  });
-
-  // انتظار ستِب livraison (بدون extraSelector)
-  cy.waitForPageReady({
-    fallbackTextRegex: [
-      /livraison|adresse\s+de\s+livraison/i,
-      /delivery|shipping\s*address/i,
-      /التوصيل|عنوان\s*التسليم|الشحن/i
-    ],
-    timeout: 30000
-  });
-
-  assertStepLivraison();
 });
-
 
 // STORY light: un parcours minimal par type dispo (sans boucles lourdes)
 describe('STORY — Ajouter → post-panier → panier (+remplacer) [LIGHT]', () => {

@@ -41,15 +41,15 @@ jobs:
       - name: 🧪 Run Cypress (Chrome headless)
         uses: cypress-io/github-action@v6
         with:
-          browser: chrome
-          
           command: >
             npx cypress run
             --browser chrome --headless
             --spec cypress/e2e/orange_shop.cy.js
             --env SLOW=0
-            --config video=false,screenshotOnRunFailure=false,trashAssetsBeforeRuns=true
             -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768
+        env:
+          CYPRESS_screenshotOnRunFailure: true
+          CYPRESS_video: false
 
       - name: 📎 Upload screenshots (if any)
         if: failure()
@@ -64,5 +64,3 @@ jobs:
         with:
           name: cypress-videos
           path: cypress/videos
-
-
