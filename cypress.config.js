@@ -11,8 +11,8 @@ module.exports = defineConfig({
     defaultCommandTimeout: 10000,
     chromeWebSecurity: false,
     setupNodeEvents(on, config) {
-      require('cypress-mochawesome-reporter/plugin')(on)
-      return config
+      require('cypress-mochawesome-reporter/plugin')(on);
+      return config;
     }
   },
   video: false,
@@ -20,9 +20,9 @@ module.exports = defineConfig({
   reporterOptions: {
     reportDir: 'cypress/reports',
     reportFilename: 'report',
-    overwrite: true,
-    html: true,
-    json: false,
+    overwrite: false,
+    html: false,
+    json: true,
     charts: true,
     embeddedScreenshots: true,
     inlineAssets: true

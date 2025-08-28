@@ -15,14 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
-    # هاد env على مستوى الجوب (سيري فيها السكريتس من Settings → Secrets → Actions)
-    env:
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASS: ${{ secrets.SMTP_PASS }}
-      MAIL_TO:   ${{ secrets.MAIL_TO }}
-
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v4
@@ -52,29 +44,26 @@ jobs:
           command: >
             npx cypress run
             --browser chrome --headless
-            --spec cypress/e2e/orange_shop.cy.js
+            --spec cypress/e2e/**/*.cy.js
             --env SLOW=0
             -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768
         env:
           CYPRESS_screenshotOnRunFailure: true
-          CYPRESS_video: false
+          CYPRESS_video: true
 
-      # artifacts باش تبقى ديما كتطلع فشل/نجاح
-      - name: 📎 Upload screenshots (if any)
-        if: failure()
+      - name: 📝 Generate unified HTML report
+        if: always()
+        run: npm run report:regen
+
+      - name: 📦 Upload Pages bundle (full reports dir)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots
-          path: cypress/screenshots
+          name: e2e-pages
+          path: cypress/reports
+          if-no-files-found: warn
 
-      - name: 🎥 Upload videos (if any)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-videos
-          path: cypress/videos
-
-      - name: 📎 Upload HTML report
+      - name: 📎 Upload HTML report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -82,10 +71,49 @@ jobs:
           path: cypress/reports/report.html
           if-no-files-found: warn
 
-      # إرسال الإيميل ما يطيّحش الپايپلاين حتى إلا فشل SMTP
-      - name: ✉️ Send report by email (Outlook SMTP)
+      - name: 📎 Upload screenshots (always)
         if: always()
-        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: 🎥 Upload videos (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: ignore
+
+  deploy-pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: cypress
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: ⬇️ Download report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-pages
+          path: ./site
+
+      - name: 🧷 Make index.html
         run: |
-          ls -lah cypress/reports || true
-          node scripts/send-mails.js
+          test -f ./site/report.html
+          cp ./site/report.html ./site/index.html
+
+      - name: 📦 Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
