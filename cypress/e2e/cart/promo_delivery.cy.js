@@ -35,6 +35,7 @@ const applyPromo = (code, { expectValid = false } = {}) => {
       return /code\s*promo|coupon|bon\s*d'?achat|avoir|promo/i.test(blob);
     }).first();
 
+    
     if (!input.length) {
       // fallback: أول input نصّي فهاد السكسيون
       input = $b.find('input[type="text"], input').first();
