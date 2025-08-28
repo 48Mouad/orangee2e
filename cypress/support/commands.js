@@ -48,23 +48,19 @@ Cypress.Commands.add('getCheckoutRoot', () => {
   });
 });
 
-// سدّ أي بانير/مودال كيسدّ علينا الفورم
+// cypress/support/commands.js
 Cypress.Commands.add('closeBannersIfAny', () => {
   return cy.getCheckoutRoot().then(($root) => {
-    const selectors = [
-      'button:contains("Accepter")',
-      'button:contains("J\'accepte")',
-      'button:contains("OK")',
-      'button[aria-label*="fermer" i]',
-      '[data-testid*="close" i]',
-      '.cookie, .cookies, .cc-window button',
-    ];
-    selectors.forEach((sel) => {
-      const $btns = $root.find(sel);
-      if ($btns.length) cy.wrap($btns[0]).click({ force: true });
-    });
-  });
-});
+    const candSel = 'button,[role="button"],[aria-label],[title],.close,[data-testid*="close"],.cookie,.cookies,.cc-window button'
+    const rx = /(accepter|j'accepte|ok|fermer|close|dismiss|×|x)/i
+    const $btns = $root.find(candSel).filter((_, el) => {
+      const t = (el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || '').toLowerCase().trim()
+      return rx.test(t)
+    })
+    if ($btns.length) cy.wrap($btns[0]).click({ force: true })
+  })
+})
+
 
 // إلا كان سويتش بين Téléphone/Email بدّل ل Email
 Cypress.Commands.add('ensureEmailMode', () => {

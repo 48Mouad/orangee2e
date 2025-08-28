@@ -583,6 +583,27 @@ const findCommanderButton = () => {
   });
 };
 
+// helpers case-insensitive بلا CSS4 [i]
+const clickByValueOrIdContains = (needle) => {
+  const n = needle.toLowerCase();
+  cy.get('input,[id],[value]')
+    .filter((_, el) => {
+      const val = (el.getAttribute('value') || '').toLowerCase();
+      const id  = (el.id || '').toLowerCase();
+      return val.includes(n) || id.includes(n);
+    })
+    .first()
+    .click({ force: true });
+};
+
+const hasByValueOrId = ($ctx, needle) => {
+  const n = needle.toLowerCase();
+  return $ctx.find('[value],[id]').filter((_, el) => {
+    const val = (el.getAttribute('value') || '').toLowerCase();
+    const id  = (el.id || '').toLowerCase();
+    return val.includes(n) || id.includes(n);
+  }).length > 0;
+};
 
 // Ignorer les exceptions JS externes
 before(() => {
@@ -641,7 +662,7 @@ describe('Offres Prépayées – Sélection & Panier', () => {
       }
 
       if (target.length) cy.wrap(target).scrollIntoView().click({ force: true });
-      else cy.get(isESIM ? '[value*="esim" i], #esim' : '[value="sim"], #sim').first().click({ force: true });
+      else clickByValueOrIdContains(isESIM ? 'esim' : 'sim');
     });
 
     cy.get('body', { timeout: 10000 }).should(($b) => {
@@ -835,7 +856,7 @@ describe('STORY — Ajouter → post-panier → panier (+remplacer) [LIGHT]', ()
       const hasSIM  = $b.find('*').filter((i, el) => /Carte\s*SIM\s*physique/i.test(el.textContent || '')).length > 0 ||
                       $b.find('[value="sim"], #sim').length > 0;
       const hasESIM = $b.find('*').filter((i, el) => /Carte\s*eSIM/i.test(el.textContent || '')).length > 0 ||
-                      $b.find('[value*="esim" i], #esim').length > 0;
+                      hasByValueOrId($b, 'esim');
       const types = [];
       if (hasSIM) types.push('sim');
       if (hasESIM) types.push('esim');
@@ -858,7 +879,7 @@ describe('STORY — Ajouter → post-panier → panier (+remplacer) [LIGHT]', ()
             ).first();
           }
           if (target.length) cy.wrap(target).scrollIntoView().click({ force: true });
-          else cy.get(isESIM ? '[value*="esim" i], #esim' : '[value="sim"], #sim').first().click({ force: true });
+          else clickByValueOrIdContains(isESIM ? 'esim' : 'sim');
         });
         cy.contains('button, [role="button"]', /ajouter au panier/i, { timeout: 15000 })
           .should('be.visible')

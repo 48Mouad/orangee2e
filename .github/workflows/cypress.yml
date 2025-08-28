@@ -2,9 +2,9 @@ name: E2E (Cypress)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -15,6 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
+    # هاد env على مستوى الجوب (سيري فيها السكريتس من Settings → Secrets → Actions)
+    env:
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      MAIL_TO:   ${{ secrets.MAIL_TO }}
+
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v4
@@ -23,7 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: npm
 
       - name: 🧭 Setup Chrome
         uses: browser-actions/setup-chrome@v1
@@ -51,6 +59,7 @@ jobs:
           CYPRESS_screenshotOnRunFailure: true
           CYPRESS_video: false
 
+      # artifacts باش تبقى ديما كتطلع فشل/نجاح
       - name: 📎 Upload screenshots (if any)
         if: failure()
         uses: actions/upload-artifact@v4
@@ -64,3 +73,19 @@ jobs:
         with:
           name: cypress-videos
           path: cypress/videos
+
+      - name: 📎 Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-report
+          path: cypress/reports/report.html
+          if-no-files-found: warn
+
+      # إرسال الإيميل ما يطيّحش الپايپلاين حتى إلا فشل SMTP
+      - name: ✉️ Send report by email (Outlook SMTP)
+        if: always()
+        continue-on-error: true
+        run: |
+          ls -lah cypress/reports || true
+          node scripts/send-mails.js

@@ -1,3 +1,3 @@
 // cypress/support/e2e.js
 import './commands';
-//test
+import 'cypress-mochawesome-reporter/register';
