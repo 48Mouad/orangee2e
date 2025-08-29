@@ -113,11 +113,10 @@ Usage interne (QA).
 ## Run locally
 ```bash
 npm i
-npx cypress run \
-  --browser chrome --headless \
-  --spec cypress/e2e/orange_shop.cy.js \
+npx cypress run --browser chrome --headless --spec "cypress/e2e/**/*.cy.js" \
   --env SLOW=0 \
-  --config video=false,screenshotOnRunFailure=false,trashAssetsBeforeRuns=true \
+  --config video=false,screenshotOnRunFailure=true,trashAssetsBeforeRuns=true \
   -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768
+
 ```
 ---
