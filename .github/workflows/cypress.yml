@@ -40,43 +40,22 @@ jobs:
 
       - name: 🧪 Run Cypress (Chrome headless)
         uses: cypress-io/github-action@v6
-        continue-on-error: true
         with:
           command: >
             npx cypress run
             --browser chrome --headless
-            --spec "cypress/e2e/**/*.cy.js"
+            --spec cypress/e2e/*.cy.js
             --env SLOW=0
             -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768
         env:
           CYPRESS_screenshotOnRunFailure: true
           CYPRESS_video: true
 
-      - name: 🧹 Normalize report filename
+      - name: 📝 Generate unified HTML report
         if: always()
         run: |
           mkdir -p cypress/reports
-          LATEST=$(ls -1t cypress/reports/report*.html 2>/dev/null | head -n1 || true)
-          if [ -f "cypress/reports/report.html" ]; then
-            cp cypress/reports/report.html cypress/reports/index.html
-          elif [ -n "$LATEST" ]; then
-            cp "$LATEST" cypress/reports/report.html
-            cp "$LATEST" cypress/reports/index.html
-          else
-            echo "⚠️ Aucun rapport trouvé"
-          fi
-
-      - name: 🧳 Bundle screenshots & videos into report site
-        if: always()
-        run: |
-          mkdir -p cypress/reports/screenshots cypress/reports/videos
-          # بعض الريپورترات كينسخو الفيديوهات للـ reports/videos تلقائياً، ولكن نضمنو هنا
-          if [ -d cypress/screenshots ]; then
-            cp -r cypress/screenshots/* cypress/reports/screenshots/ 2>/dev/null || true
-          fi
-          if [ -d cypress/videos ]; then
-            cp -r cypress/videos/* cypress/reports/videos/ 2>/dev/null || true
-          fi
+          npm run report:regen || echo "no mochawesome jsons; skipping merge"
 
       - name: 📦 Upload Pages bundle (full reports dir)
         if: always()
@@ -127,9 +106,23 @@ jobs:
           name: e2e-pages
           path: ./site
 
-      - name: ✅ Ensure index.html exists
+      - name: 🧷 Make index.html (fallback)
         run: |
-          test -f ./site/index.html || (cp ./site/report.html ./site/index.html)
+          mkdir -p ./site
+          # إذا report.html ماكاينش، جرّب أول HTML فـ المجلد
+          if [ ! -f ./site/report.html ]; then
+            first_html="$(ls -1 ./site/*.html 2>/dev/null | head -n1 || true)"
+            if [ -n "$first_html" ]; then
+              cp "$first_html" ./site/report.html
+            fi
+          fi
+          # دير index.html إلا لقيتي واحد
+          if [ -f ./site/report.html ]; then
+            cp ./site/report.html ./site/index.html
+          else
+            echo "⚠️ No HTML report found; skipping Pages deploy."
+            exit 0
+          fi
 
       - name: 📦 Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
