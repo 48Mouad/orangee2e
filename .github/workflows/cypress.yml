@@ -40,22 +40,43 @@ jobs:
 
       - name: 🧪 Run Cypress (Chrome headless)
         uses: cypress-io/github-action@v6
-        continue-on-error: true 
+        continue-on-error: true
         with:
           command: >
             npx cypress run
             --browser chrome --headless
-            --spec cypress/e2e/**/*.cy.js
+            --spec "cypress/e2e/**/*.cy.js"
             --env SLOW=0
             -- --disable-gpu --disable-dev-shm-usage --no-sandbox --window-size=1366,768
         env:
           CYPRESS_screenshotOnRunFailure: true
           CYPRESS_video: true
 
-      
-      # - name: 📝 Generate unified HTML report
-      #   if: always()
-      #   run: npm run report:regen
+      - name: 🧹 Normalize report filename
+        if: always()
+        run: |
+          mkdir -p cypress/reports
+          LATEST=$(ls -1t cypress/reports/report*.html 2>/dev/null | head -n1 || true)
+          if [ -f "cypress/reports/report.html" ]; then
+            cp cypress/reports/report.html cypress/reports/index.html
+          elif [ -n "$LATEST" ]; then
+            cp "$LATEST" cypress/reports/report.html
+            cp "$LATEST" cypress/reports/index.html
+          else
+            echo "⚠️ Aucun rapport trouvé"
+          fi
+
+      - name: 🧳 Bundle screenshots & videos into report site
+        if: always()
+        run: |
+          mkdir -p cypress/reports/screenshots cypress/reports/videos
+          # بعض الريپورترات كينسخو الفيديوهات للـ reports/videos تلقائياً، ولكن نضمنو هنا
+          if [ -d cypress/screenshots ]; then
+            cp -r cypress/screenshots/* cypress/reports/screenshots/ 2>/dev/null || true
+          fi
+          if [ -d cypress/videos ]; then
+            cp -r cypress/videos/* cypress/reports/videos/ 2>/dev/null || true
+          fi
 
       - name: 📦 Upload Pages bundle (full reports dir)
         if: always()
@@ -65,7 +86,7 @@ jobs:
           path: cypress/reports
           if-no-files-found: warn
 
-      - name: 📎 Upload HTML report artifact
+      - name: 📎 Upload main HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -106,10 +127,9 @@ jobs:
           name: e2e-pages
           path: ./site
 
-      - name: 🧷 Make index.html
+      - name: ✅ Ensure index.html exists
         run: |
-          test -f ./site/report.html
-          cp ./site/report.html ./site/index.html
+          test -f ./site/index.html || (cp ./site/report.html ./site/index.html)
 
       - name: 📦 Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -1,5 +1,5 @@
-import { waitForLoad, acceptCookiesIfPresent } from '../../support/helpers/dom';
-import { addToCartAndConfirm, goToCartStrict, assertCartNonEmpty } from '../../support/helpers/cart';
+import { waitForLoad, acceptCookiesIfPresent } from '../support/helpers/dom';
+import { addToCartAndConfirm, goToCartStrict, assertCartNonEmpty } from '../support/helpers/cart';
 
 const selectTypeStrong = (type) => {
   const isESIM = type === 'esim';

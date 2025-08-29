@@ -1,5 +1,5 @@
-import { waitForLoad, acceptCookiesIfPresent } from '../../support/helpers/dom';
-import { getBuyButtons, openOfferByIndex } from '../../support/helpers/cart';
+import { waitForLoad, acceptCookiesIfPresent } from '../support/helpers/dom';
+import { getBuyButtons, openOfferByIndex } from '../support/helpers/cart';
 
 describe('Offres Prépayées – Liste', () => {
   beforeEach(() => {

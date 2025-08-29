@@ -1,6 +1,6 @@
-import { selectFirstAvailableType } from '../../support/helpers/cart';
-import { addToCartAndConfirm, goToCartStrict, assertCartNonEmpty } from '../../support/helpers/cart';
-import { acceptCookiesIfPresent } from '../../support/helpers/dom';
+import { selectFirstAvailableType } from '../support/helpers/cart';
+import { addToCartAndConfirm, goToCartStrict, assertCartNonEmpty } from '../support/helpers/cart';
+import { acceptCookiesIfPresent } from '../support/helpers/dom';
 
 describe('STORY — Ajouter → post-panier → panier (+remplacer) [LIGHT]', () => {
   it('TC-STORY (light): parcours minimal', () => {

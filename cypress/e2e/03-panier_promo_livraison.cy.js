@@ -1,6 +1,6 @@
-import { acceptCookiesIfPresent } from '../../support/helpers/dom';
-import { goToCartStrict, assertCartNonEmpty } from '../../support/helpers/cart';
-import { setDeliveryCity } from '../../support/helpers/checkout';
+import { acceptCookiesIfPresent } from '../support/helpers/dom';
+import { goToCartStrict, assertCartNonEmpty } from '../support/helpers/cart';
+import { setDeliveryCity } from '../support/helpers/checkout';
 
 const gotoPanierDirect = () => {
   cy.visit('/panier', { timeout: 30000 });
