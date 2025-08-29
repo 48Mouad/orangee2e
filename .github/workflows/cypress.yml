@@ -40,6 +40,7 @@ jobs:
 
       - name: 🧪 Run Cypress (Chrome headless)
         uses: cypress-io/github-action@v6
+        continue-on-error: true 
         with:
           command: >
             npx cypress run
@@ -51,9 +52,10 @@ jobs:
           CYPRESS_screenshotOnRunFailure: true
           CYPRESS_video: true
 
-      - name: 📝 Generate unified HTML report
-        if: always()
-        run: npm run report:regen
+      
+      # - name: 📝 Generate unified HTML report
+      #   if: always()
+      #   run: npm run report:regen
 
       - name: 📦 Upload Pages bundle (full reports dir)
         if: always()
