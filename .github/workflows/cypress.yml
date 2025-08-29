@@ -88,7 +88,7 @@ jobs:
           if-no-files-found: ignore
 
   deploy-pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: cypress
     runs-on: ubuntu-latest
     permissions:

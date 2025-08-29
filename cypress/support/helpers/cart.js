@@ -34,4 +34,5 @@ export const selectFirstAvailableType = () => {
   cy.contains('button, [role="button"]', /ajouter au panier/i, { timeout: 15000 })
     .should('be.visible')
     .and('not.be.disabled');
+    
 };
