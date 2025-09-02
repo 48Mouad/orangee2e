@@ -108,7 +108,7 @@ Le workflow **`.github/workflows/cypress.yml`** :
 
 Usage interne (QA).
 
-© DIOT SIACI Maroc / Équipe QA E2E.
+© Dt Sc Maroc / Équipe QA E2E.
 ---
 ## Run locally
 ```bash
